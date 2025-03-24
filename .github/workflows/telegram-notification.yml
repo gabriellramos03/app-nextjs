@@ -1,0 +1,20 @@
+name: Notify on PR merge to main
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send notification to Telegram
+        if: github.event.pull_request.merged == true 
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage?chat_id=5184255633&text=PR%20realizado%20com%20sucesso%20no%20projeto%20Conecte%21%20Certifique%21" \
+               -d "chat_id=5184255633" \
+               -d "text=Merge realizado com sucesso no projeto! 🎉 Certifique! ✅"
