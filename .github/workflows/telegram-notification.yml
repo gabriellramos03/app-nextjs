@@ -31,8 +31,8 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
             -d "chat_id=5184255633" \
-            -d "text=Merge realizado com sucesso no projeto! 🎉\n
+            -d "text=Merge realizado com sucesso no projeto asdasd! 🎉\n
             Merge time: $PR_MERGE_TIME\n
             Author: $PR_AUTHOR\n
             Approved by: $APPROVED_BY\n
-            Certifique! ✅"
+             ✅"
