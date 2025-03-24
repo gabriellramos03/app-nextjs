@@ -12,9 +12,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send notification to Telegram
-        if: github.event.pull_request.merged == true 
+      - name: Get PR details
+        if: github.event.pull_request.merged == true
         run: |
-          curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage?chat_id=5184255633&text=PR%20realizado%20com%20sucesso%20no%20projeto%20Conecte%21%20Certifique%21" \
-               -d "chat_id=5184255633" \
-               -d "text=Merge realizado com sucesso no projeto! 🎉 Certifique! ✅"
+          PR_MERGE_TIME=$(echo "${{ github.event.pull_request.merged_at }}")
+          PR_AUTHOR=$(echo "${{ github.event.pull_request.user.login }}")
+          APPROVALS=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
+
+          APPROVED_BY=$(echo "$APPROVALS" | jq -r 'map(select(.state == "APPROVED")) | .[0].user.login')
+
+          echo "Pull Request merged at: $PR_MERGE_TIME"
+          echo "PR author: $PR_AUTHOR"
+          echo "Approved by: $APPROVED_BY"
+
+      - name: Send notification to Telegram
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
+            -d "chat_id=5184255633" \
+            -d "text=Merge realizado com sucesso no projeto! 🎉\n
+            Merge time: $PR_MERGE_TIME\n
+            Author: $PR_AUTHOR\n
+            Approved by: $APPROVED_BY\n
+            Certifique! ✅"
