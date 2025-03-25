@@ -1,4 +1,4 @@
-name: Notify on PR merge to main
+name: Notify on PR merge
 
 on:
   pull_request:
@@ -6,33 +6,40 @@ on:
       - closed
     branches:
       - main
+      - kaik_test
 
 jobs:
   notify:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get PR details
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Send notification to Telegram
         if: github.event.pull_request.merged == true
         run: |
-          PR_MERGE_TIME=$(echo "${{ github.event.pull_request.merged_at }}")
-          PR_AUTHOR=$(echo "${{ github.event.pull_request.user.login }}")
+          export TZ="America/La_Paz"
+          PR_MERGE_TIME=$(date -d "${{ github.event.pull_request.merged_at }}" +"%Y-%m-%d %H:%M:%S")
+
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+
           APPROVALS=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
 
-          APPROVED_BY=$(echo "$APPROVALS" | jq -r 'map(select(.state == "APPROVED")) | .[0].user.login')
+           APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")')
 
-          echo "Pull Request merged at: $PR_MERGE_TIME"
-          echo "PR author: $PR_AUTHOR"
-          echo "Approved by: $APPROVED_BY"
 
-      - name: Send notification to Telegram
-        run: |
+          if [ -z "$APPROVED_BY" ] || [ "$APPROVED_BY" == "null" ]; then
+            APPROVED_BY="Não encontrado"
+          else
+            APPROVED_BY="@${APPROVED_BY}"
+          fi
+
           curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
             -d "chat_id=2130096655" \
-            -d "text=Merge realizado com sucesso no projeto asdasd! 🎉\n
-            Merge time: $PR_MERGE_TIME\n
-            Author: $PR_AUTHOR\n
-            Approved by: $APPROVED_BY\n
-             ✅"
+            -d "text= Merge realizado no projeto *${{ github.repository }}*! %0A\
+            🕒 Horário do merge: *$PR_MERGE_TIME* %0A\
+            👤 Autor: *@$PR_AUTHOR*%0A\
+            ✅ Aprovado por: *@$APPROVED_BY*"
