@@ -6,33 +6,54 @@ on:
       - closed
     branches:
       - kaik_test
+      - main
 
 jobs:
   notify:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Get PR details
         if: github.event.pull_request.merged == true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_MERGE_TIME=$(echo "${{ github.event.pull_request.merged_at }}")
-          PR_AUTHOR=$(echo "${{ github.event.pull_request.user.login }}")
+          PR_MERGE_TIME_UTC="${{ github.event.pull_request.merged_at }}"
+          PR_MERGE_TIME=$(date -d "$PR_MERGE_TIME_UTC" +"%Y-%m-%d %H:%M:%S -03:00")
+
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+
           APPROVALS=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
 
-          APPROVED_BY=$(echo "$APPROVALS" | jq -r 'map(select(.state == "APPROVED")) | .[0].user.login')
+          APPROVED_BY=$(echo "$APPROVALS" | jq -r '.[] | select(.state == "APPROVED") | .user.login' | head -n 1)
+
+          if [ -z "$APPROVED_BY" ]; then
+            APPROVED_BY="Not found"
+          fi
 
           echo "Pull Request merged at: $PR_MERGE_TIME"
           echo "PR author: $PR_AUTHOR"
           echo "Approved by: $APPROVED_BY"
 
+          echo "PR_MERGE_TIME=$PR_MERGE_TIME" >> $GITHUB_ENV
+          echo "PR_AUTHOR=$PR_AUTHOR" >> $GITHUB_ENV
+          echo "APPROVED_BY=$APPROVED_BY" >> $GITHUB_ENV
+
       - name: Send notification to Telegram
+        if: github.event.pull_request.merged == true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
+          "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
             -d "chat_id=2130096655" \
-            -d "text=Merge realizado com sucesso no projeto asdasd! 🎉\n
-            Merge time: $PR_MERGE_TIME\n
-            Author: $PR_AUTHOR\n
-            Approved by: $APPROVED_BY\n
-             ✅"
+            -d "text=Merge realizado com sucesso no projeto ${{ github.repository }}! 🎉%0A\
+            Horário do merge: ${{ env.PR_MERGE_TIME }}%0A\
+            Autor: @${{ env.PR_AUTHOR }}%0A\
+            Aprovado por: @${{ env.APPROVED_BY }}%0A\
+            ✅"
