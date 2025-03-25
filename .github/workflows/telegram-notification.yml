@@ -23,22 +23,44 @@ jobs:
           PR_MERGE_TIME=$(date -d "${{ github.event.pull_request.merged_at }}" +"%Y-%m-%d %H:%M:%S")
 
           PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          echo "Autor da PR: $PR_AUTHOR"
 
-          APPROVALS=$(curl -s \
+          HTTP_STATUS=$(curl -s -o approvals.json -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
 
-          APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")')
+          echo "HTTP Status da requisição: $HTTP_STATUS"
+          echo "Resposta da API: $(cat approvals.json)"
 
-          if [ -z "$APPROVED_BY" ] || [ "$APPROVED_BY" == "null" ]; then
-            APPROVED_BY="Não encontrado"
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Erro ao chamar a API do GitHub. Status: $HTTP_STATUS"
+            APPROVED_BY="Erro ao consultar a API"
           else
-            APPROVED_BY="@${APPROVED_BY}"
+            APPROVALS=$(cat approvals.json)
+            echo "Revisões encontradas: $APPROVALS"
+
+            echo "Estados das revisões: $(echo "$APPROVALS" | jq -r '[.[] | {state: .state, user: .user.login}]')"
+
+            APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")' || echo "Erro no jq")
+            echo "Aprovadores antes da condição: '$APPROVED_BY'"
+
+            if [ -z "$APPROVED_BY" ] || [ "$APPROVED_BY" == "null" ] || [ "$APPROVED_BY" == "Erro no jq" ]; then
+              APPROVALS_COUNT=$(echo "$APPROVALS" | jq -r 'length')
+              if [ "$APPROVALS_COUNT" -eq 0 ]; then
+                APPROVED_BY="Nenhuma revisão encontrada"
+              else
+                APPROVED_BY="Nenhuma aprovação encontrada"
+              fi
+            else
+              APPROVED_BY="@${APPROVED_BY}"
+            fi
           fi
+
+          echo "Aprovadores finais: $APPROVED_BY"
 
           curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
             -d "chat_id=2130096655" \
-            -d "text= Merge realizado no projeto *${{ github.repository }}*! %0A\
+            -d "text=Merge realizado no projeto *${{ github.repository }}*! %0A\
             🕒 Horário do merge: *$PR_MERGE_TIME* %0A\
-            👤 Autor: *@$PR_AUTHOR*%0A\
-            ✅ Aprovado por: $APPROVED_BY"  
+            👤 Autor: *@$PR_AUTHOR* %0A\
+            ✅ Aprovado por: $APPROVED_BY"
