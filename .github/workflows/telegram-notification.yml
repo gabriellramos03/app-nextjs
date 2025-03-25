@@ -28,11 +28,8 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
 
-          echo "$APPROVALS"
+           APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")')
 
-          APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")')
-
-          echo "Aprovado por: $APPROVED_BY"
 
           if [ -z "$APPROVED_BY" ] || [ "$APPROVED_BY" == "null" ]; then
             APPROVED_BY="Não encontrado"
@@ -40,9 +37,9 @@ jobs:
             APPROVED_BY="@${APPROVED_BY}"
           fi
 
-            curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
+          curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
             -d "chat_id=2130096655" \
             -d "text= Merge realizado no projeto *${{ github.repository }}*! %0A\
             🕒 Horário do merge: *$PR_MERGE_TIME* %0A\
             👤 Autor: *@$PR_AUTHOR*%0A\
-            ✅ Aprovado por: $APPROVED_BY"
+            ✅ Aprovado por: *@$APPROVED_BY*"
