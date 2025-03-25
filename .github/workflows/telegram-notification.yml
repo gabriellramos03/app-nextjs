@@ -41,4 +41,4 @@ jobs:
             -d "text= Merge realizado no projeto *${{ github.repository }}*! %0A\
             🕒 Horário do merge: *$PR_MERGE_TIME* %0A\
             👤 Autor: *@$PR_AUTHOR*%0A\
-            ✅ Aprovado por: *@$APPROVED_BY*"
+            ✅ Aprovado por: $APPROVED_BY"  
