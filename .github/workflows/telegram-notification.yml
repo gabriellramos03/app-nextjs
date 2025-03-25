@@ -19,7 +19,9 @@ jobs:
       - name: Send notification to Telegram
         if: github.event.pull_request.merged == true
         run: |
-          PR_MERGE_TIME=$(date -d "${{ github.event.pull_request.merged_at }}" +"%Y-%m-%d %H:%M:%S -04:00")
+          export TZ="America/La_Paz"
+          PR_MERGE_TIME=$(date -d "${{ github.event.pull_request.merged_at }}" +"%Y-%m-%d %H:%M:%S")
+
           PR_AUTHOR="${{ github.event.pull_request.user.login }}"
 
           APPROVALS=$(curl -s \
@@ -35,6 +37,6 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
             -d "chat_id=2130096655" \
             -d "text=🚀 Merge realizado no projeto *${{ github.repository }}*! 🎉%0A\
-            🕒 Horário do merge: *$PR_MERGE_TIME* (UTC-4)%0A\
+            🕒 Horário do merge: *$PR_MERGE_TIME* (Horário de La Paz - UTC-4)%0A\
             👤 Autor: *@$PR_AUTHOR*%0A\
             ✅ Aprovado por: *@$APPROVED_BY*"
