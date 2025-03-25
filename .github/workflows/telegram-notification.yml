@@ -28,8 +28,7 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
 
-           APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")')
-
+          APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")')
 
           if [ -z "$APPROVED_BY" ] || [ "$APPROVED_BY" == "null" ]; then
             APPROVED_BY="Não encontrado"
