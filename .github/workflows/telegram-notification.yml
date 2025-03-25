@@ -29,7 +29,7 @@ jobs:
 
       - name: Send notification to Telegram
         run: |
-          curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
+           curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage"
             -d "chat_id=2130096655" \
             -d "text=Merge realizado com sucesso no projeto asdasd! 🎉\n
             Merge time: $PR_MERGE_TIME\n
