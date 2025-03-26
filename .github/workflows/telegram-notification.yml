@@ -23,21 +23,17 @@ jobs:
           PR_MERGE_TIME=$(date -d "${{ github.event.pull_request.merged_at }}" +"%Y-%m-%d %H:%M:%S")
           PR_AUTHOR="${{ github.event.pull_request.user.login }}"
           
-          # Captura revisões da PR diretamente
           APPROVALS=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
 
-          # Extrai os aprovadores
           APPROVED_BY=$(echo "$APPROVALS" | jq -r '[.[] | select(.state == "APPROVED") | .user.login] | join(", @")')
 
-          # Define mensagem padrão se não houver aprovadores
           if [ -z "$APPROVED_BY" ] || [ "$APPROVED_BY" == "null" ]; then
             APPROVED_BY="Nenhuma aprovação encontrada"
           else
             APPROVED_BY="@${APPROVED_BY}"
           fi
 
-          # Envia mensagem para o Telegram
           curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage" \
             -d "chat_id=2130096655" \
             -d "text=Merge realizado no projeto *${{ github.repository }}*! %0A\
