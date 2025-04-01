@@ -18,7 +18,7 @@ jobs:
           PR_MERGE_TIME=$(echo "${{ github.event.pull_request.merged_at }}")
           PR_AUTHOR=$(echo "${{ github.event.pull_request.user.login }}")
           APPROVALS=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews")
 
           APPROVED_BY=$(echo "$APPROVALS" | jq -r 'map(select(.state == "APPROVED")) | .[0].user.login')
@@ -28,11 +28,14 @@ jobs:
           echo "Approved by: $APPROVED_BY"
 
       - name: Send notification to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-           curl -s -X POST "https://api.telegram.org/bot7363146072:AAGI8pvEpgIbWzyAiV1BWb6v50NIRVirS9Q/sendMessage"
-            -d "chat_id=2130096655" \
-            -d "text=Merge realizado com sucesso no projeto asdasd! 🎉\n
-            Merge time: $PR_MERGE_TIME\n
-            Author: $PR_AUTHOR\n
-            Approved by: $APPROVED_BY\n
-             ✅"
+          curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+          -d "chat_id=$TELEGRAM_CHAT_ID" \
+          -d "text=Merge realizado com sucesso no projeto asdasd! 🎉\n
+          Merge time: $PR_MERGE_TIME\n
+          Author: $PR_AUTHOR\n
+          Approved by: $APPROVED_BY\n
+          ✅"
